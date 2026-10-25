@@ -1,0 +1,8 @@
+# Official inference stack used by emotion2vec's FunASR interface.
+funasr>=1.2.6
+torch>=1.13
+# FunASR already depends on modelscope, but keeping it explicit makes the
+# ModelScope hub option reproducible on older FunASR releases.
+modelscope>=1.13
+# Hugging Face Hub 2.x uses the maintained httpx2 transport.
+httpx2>=2.13
