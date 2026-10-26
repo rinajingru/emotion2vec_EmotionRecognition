@@ -1,8 +1,7 @@
 # Task 1 - Speech Emotion Recognition
 
 This project predicts the emotion expressed in one speech recording with the
-official `emotion2vec+ seed` checkpoint.  It implements the minimum working
-system required by the midterm rubric: an audio file is passed through a
+official `emotion2vec+ seed` checkpoint.  It implements a complete working system as required by the midterm rubric: an audio file is passed through a
 frozen emotion representation model and a lightweight classification head, and
 the program returns the top emotion plus the complete score distribution.
 
@@ -11,7 +10,7 @@ the program returns the top emotion plus the complete score distribution.
 Use Python 3.8 or newer.  Install the inference stack once:
 
 ```powershell
-cd task1_ser
+# 进入包含 ser_infer.py 和 requirements.txt 的目录后执行：
 python -m pip install -r requirements.txt
 ```
 
@@ -32,16 +31,11 @@ python ser_infer.py "C:\path\to\speech.wav" --hub ms `
 
 The first run downloads the checkpoint automatically.  The examples use
 ModelScope (`ms`), which is convenient for mainland China; pass `--hub hf` for
-Hugging Face instead.  The model card expects
-16 kHz speech; FunASR handles the decoding, while the script records the
-sample-rate assumption in its JSON output.  The default checkpoint predicts
+Hugging Face instead.  Emotion2vec expects 16 kHz mono input. FunASR handles decoding and resampling; the script reports the expected sample rate (16000 Hz) in its JSON output. The default checkpoint predicts
 nine categories: angry, disgusted, fearful, happy, neutral, other, sad,
 surprised, and unknown.
 
-`--extract-embedding` additionally requests the utterance representation.  To
-use the original representation-only checkpoint from the paper, pass
-`--model iic/emotion2vec`; that mode returns a 768-dimensional feature rather
-than class scores.
+`--extract-embedding` additionally requests the utterance representation from FunASR and records its shape in the JSON output. The original representation-only checkpoint from the paper can also be loaded by passing --model iic/emotion2vec.
 
 ## What the system does
 
@@ -63,9 +57,11 @@ combines local frame-level MSE and global utterance-level MSE:
 
 ```
 L = L_frame + alpha * L_utterance
-L_frame = mean_i_in_mask ||Y_i^T - Y_i^S||^2
-L_utterance = ||mean_i(Y_i^T) - mean_j(U_j^S)||^2
+L_frame      = mean over masked frames i of ||Y_i^T - Y_i^S||^2
+L_utterance  = || mean over frames i of Y_i^T  -  U^S ||^2
 ```
+
+Here Y^T and Y^S denote the teacher's and student's frame-level features, and U^S denotes the student's utterance-level representation produced by its learnable utterance token.
 
 At inference time the encoder is frozen and `emotion2vec+ seed` supplies the
 small downstream emotion classifier.  This preserves the paper's central
@@ -115,17 +111,7 @@ F1 (WF1).
 The released checkpoint is a strong zero-shot starting point, but it still
 needs a downstream head for each target label inventory.  The paper also leaves
 speaker-information removal and calibrated open-set confidence as useful next
-steps.  A practical extension is a shared multi-task head with speaker-
-adversarial training, confidence calibration, and an explicit unknown class.
-
-## Suggested 15-minute demonstration
-
-1. Show the input/output contract and why acoustic emotion cues matter.
-2. Draw the teacher-student pipeline, the two losses, and the EMA update.
-3. Run `--self-test`, show the JSON score bar, then run one group recording.
-4. Compare the paper's IEMOCAP/MELD/RAVDESS/SAVEE table and discuss UA/WF1.
-5. Finish with error sources, complexity, limitations, and the proposed
-   speaker-robust, calibrated multi-task extension.
+steps.  A practical extension is a shared multi-task head with speaker-adversarial training, confidence calibration, and an explicit unknown class.
 
 ## Sources
 
